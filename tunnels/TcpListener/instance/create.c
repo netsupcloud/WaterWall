@@ -34,17 +34,43 @@ static void parsePortRange(tcplistener_tstate_t *state, const cJSON *port_json)
 static void parsePortSection(tcplistener_tstate_t *state, const cJSON *settings)
 {
     const cJSON *port_json = cJSON_GetObjectItemCaseSensitive(settings, "port");
+
     if (cJSON_IsNumber(port_json) && (port_json->valuedouble != 0))
     {
         parseSinglePort(state, port_json);
     }
-    else if (cJSON_IsArray(port_json) && cJSON_GetArraySize(port_json) == 2)
+    else if (cJSON_IsArray(port_json))
     {
-        parsePortRange(state, port_json);
+        int size = cJSON_GetArraySize(port_json);
+
+        if (size == 2)
+        {
+            parsePortRange(state, port_json);
+        }
+        else if (size > 2)
+        {
+            for (int i = 0; i < size; i++)
+            {
+                const cJSON *port = cJSON_GetArrayItem(port_json, i);
+
+                if (!cJSON_IsNumber(port) || port->valuedouble == 0)
+                {
+                    LOGF("JSON Error: TcpListener->settings->port[%d] is invalid", i);
+                    terminateProgram(1);
+                }
+
+                parseSinglePort(state, port);
+            }
+        }
+        else
+        {
+            LOGF("JSON Error: TcpListener->settings->port array is empty or invalid");
+            terminateProgram(1);
+        }
     }
     else
     {
-        LOGF("JSON Error: TcpListener->settings->port (number-or-array field) : The data was empty or invalid");
+        LOGF("JSON Error: TcpListener->settings->port (number-or-array field): The data was empty or invalid");
         terminateProgram(1);
     }
 }
