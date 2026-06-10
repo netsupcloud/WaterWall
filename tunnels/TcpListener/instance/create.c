@@ -188,6 +188,8 @@ static void setupFilterOptions(socket_filter_option_t *filter_opt, tcplistener_t
     filter_opt->host     = state->listen_address;
     filter_opt->port_min = state->listen_port_min;
     filter_opt->port_max = state->listen_port_max;
+    filter_opt->port_list        = state->listen_port_list;        // ✅ added
+    filter_opt->port_list_count  = state->listen_port_list_count;  // ✅ added
     filter_opt->protocol = IPPROTO_TCP;
 }
 
