@@ -105,7 +105,8 @@ static void configureMultiportBackend(socket_filter_option_t *filter_opt, tcplis
 {
     filter_opt->multiport_backend = kMultiportBackendNone;
 
-    if (state->listen_port_max != 0)
+    // FIXED: also check port_list_count
+    if (state->listen_port_max != 0 || state->listen_port_list_count > 0)
     {
         filter_opt->multiport_backend = kMultiportBackendDefault;
         dynamic_value_t dy_mb =
