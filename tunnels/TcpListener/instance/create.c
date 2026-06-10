@@ -31,16 +31,63 @@ static void parsePortRange(tcplistener_tstate_t *state, const cJSON *port_json)
     }
 }
 
+static void parsePortList(tcplistener_tstate_t *state, const cJSON *port_json, int size)
+{
+    const cJSON *port;
+    int          i = 0;
+
+    cJSON_ArrayForEach(port, port_json)
+    {
+        if (! (cJSON_IsNumber(port) && (port->valuedouble != 0)))
+        {
+            LOGF("JSON Error: TcpListener->settings->port (number-or-array field) : The data was empty or invalid");
+            terminateProgram(1);
+        }
+        i++;
+    }
+
+    state->listen_port_list = memoryAllocate(sizeof(uint16_t) * size);
+    if (state->listen_port_list == NULL)
+    {
+        LOGF("Error: TcpListener failed to allocate port list");
+        terminateProgram(1);
+    }
+
+    i = 0;
+    cJSON_ArrayForEach(port, port_json)
+    {
+        state->listen_port_list[i++] = (uint16_t) port->valuedouble;
+    }
+    state->listen_port_list_count = size;
+    state->listen_port_min        = 0;
+    state->listen_port_max        = 0;
+}
+
 static void parsePortSection(tcplistener_tstate_t *state, const cJSON *settings)
 {
     const cJSON *port_json = cJSON_GetObjectItemCaseSensitive(settings, "port");
+
     if (cJSON_IsNumber(port_json) && (port_json->valuedouble != 0))
     {
         parseSinglePort(state, port_json);
     }
-    else if (cJSON_IsArray(port_json) && cJSON_GetArraySize(port_json) == 2)
+    else if (cJSON_IsArray(port_json))
     {
-        parsePortRange(state, port_json);
+        int size = cJSON_GetArraySize(port_json);
+
+        if (size == 2)
+        {
+            parsePortRange(state, port_json);
+        }
+        else if (size > 2)
+        {
+            parsePortList(state, port_json, size);
+        }
+        else
+        {
+            LOGF("JSON Error: TcpListener->settings->port (number-or-array field) : The data was empty or invalid");
+            terminateProgram(1);
+        }
     }
     else
     {
